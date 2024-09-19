@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Room</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+</head>
+<body>
+    <h2>Chat Room</h2>
+    <input type="text" id="from" placeholder="Seu nome">
+    <input type="text" id="content" placeholder="Mensagem">
+    <button onclick="sendMessage()">Enviar</button>
+    <div id="response"></div>
+
+    <script>
+        var socket = new SockJS('http://localhost:8080/gs-guide-websocket');
+        var stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function(frame) {
+            console.log('Conectado: ' + frame);
+            stompClient.subscribe('/topic/public', function(messageOutput) {
+                showMessage(JSON.parse(messageOutput.body));
+            });
+        });
+
+        function sendMessage() {
+            var from = document.getElementById('from').value;
+            var content = document.getElementById('content').value;
+
+            if (stompClient && stompClient.connected) {
+                stompClient.send("/app/send", {}, JSON.stringify({
+                    'from': from,
+                    'content': content,
+                    'moment': new Date()
+                }));
+                document.getElementById('content').value = ''; // Limpa o campo de entrada
+            } else {
+                console.log('Conexão não estabelecida');
+            }
+        }
+
+        function showMessage(message) {
+            var response = document.getElementById('response');
+            response.innerHTML += '<br>' + message.from + ': ' + message.content;
+        }
+    </script>
+</body>
+</html>
